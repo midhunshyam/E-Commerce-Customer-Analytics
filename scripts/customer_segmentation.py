@@ -63,7 +63,19 @@ def train(a):
     pd.DataFrame({"param": ["k", "preprocessing"], "value": [K, "log1p then standardize with rfm_scaler.csv"]}).to_csv(f"{M}/segment_knn_config.csv", index=False)
     eq = pd.DataFrame(logit.coef_, columns=[f"coef_z_{c}" for c in RFM_DRIVERS]); eq.insert(0, "intercept", logit.intercept_); eq.insert(0, "segment", logit.classes_)
     eq.to_csv(f"{M}/segment_logit_coefficients.csv", index=False)
-    feats.to_csv(f"{O}/customer_segments.csv", index=False)
+    # write the same columns as solutions.ipynb, which scripts/presentation.ipynb reads: each customer's
+    # top-spend category and, when the targets file is present, next-12-month spend as future_value
+    seg_out = feats.copy()
+    cats = [c for c in ["pct_electronics", "pct_home", "pct_sports", "pct_fashion", "pct_beauty"] if c in seg_out]
+    seg_out["top_category"] = seg_out[cats].idxmax(axis=1).str.replace("pct_", "", regex=False).str.capitalize()
+    tgt_path = os.path.join(a.data_dir, "clv_targets.csv")
+    if os.path.exists(tgt_path):
+        tgt = pd.read_csv(tgt_path).rename(columns={"target_clv_next_12_months": "future_value"})
+        seg_out = seg_out.merge(tgt[["customer_id", "future_value"]], on="customer_id", how="left")
+    order = ["customer_id", "recency", "frequency", "monetary", "aov", "tenure", "active_span", "category_diversity",
+             "pct_electronics", "pct_home", "pct_sports", "pct_fashion", "pct_beauty", "top_category",
+             "age", "gender", "country", "acquisition_channel", "signup_date", "future_value", "cluster", "segment"]
+    seg_out[[c for c in order if c in seg_out] + [c for c in seg_out if c not in order]].to_csv(f"{O}/customer_segments.csv", index=False)
     print(f"[segmentation] sizes {feats['segment'].value_counts().to_dict()} | k-NN k={K}  test accuracy {accuracy_score(yte, pred):.3f}  macro-F1 {f1_score(yte, pred, average='macro'):.3f}")
     print(f"[segmentation] model saved to {M}/  |  labelled customers -> {O}/customer_segments.csv")
 
