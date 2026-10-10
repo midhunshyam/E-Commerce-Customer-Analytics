@@ -1,0 +1,4 @@
+metric,value
+test_rmse,23.94
+test_mae,14.9
+test_r2,0.9996
