@@ -1,0 +1,5 @@
+channel_name,cost_per_signup,revenue_share_rate
+Google,15.0,0.02
+Facebook,20.0,0.01
+Referral,5.0,0.05
+Organic,0.0,0.0

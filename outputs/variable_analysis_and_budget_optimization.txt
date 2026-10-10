@@ -1,0 +1,362 @@
+Loaded: 1000 customers, 10503 transactions, 4 channels. Segments: 148 VIPs, 381 Bargain, 471 Occasional.
+
+==============================================================================
+DATA OVERVIEW: every variable, its distribution and details
+==============================================================================
+
+--- Numeric variables: distribution and shape ---
+variable        n miss       min        q1    median      mean        q3       max        sd    skew
+age          1000    0      18.0      29.8      42.0      42.5      56.0      68.0      15.2    0.06
+recency      1000    0       1.0      17.0      44.0      89.0     117.2     539.0     108.3    1.94
+frequency    1000    0       1.0       3.0       9.0      10.5      16.0      35.0       8.1    0.66
+monetary     1000    0      26.2     180.9     277.1     640.3     363.2    4152.3     974.4    2.08
+aov          1000    0      18.7      22.7      50.1      52.7      61.1     129.6      32.2    1.04
+target_clv   1000    0       5.3     162.8     278.7     782.6     414.0    5325.8    1294.2    2.07
+Reading it: Age spans a wide range and is roughly flat (skew near zero), but monetary and target
+  value are strongly right skewed: their medians sit far below their maxima, so a small number of
+  heavy spenders sit in a long right tail.
+
+
+--- Histogram: monetary (total spend) (10 equal-width bins) ---
+       26 to       439 |   831 ########################################
+      439 to       851 |    21 #
+      851 to      1264 |     0 
+     1264 to      1677 |     2 
+     1677 to      2089 |     4 
+     2089 to      2502 |    18 #
+     2502 to      2914 |    50 ##
+     2914 to      3327 |    45 ##
+     3327 to      3740 |    24 #
+     3740 to      4152 |     5 
+
+--- Histogram: target_clv (next 12 months) (10 equal-width bins) ---
+        5 to       537 |   846 ########################################
+      537 to      1069 |     6 
+     1069 to      1601 |     0 
+     1601 to      2134 |     1 
+     2134 to      2666 |     4 
+     2666 to      3198 |    15 #
+     3198 to      3730 |    45 ##
+     3730 to      4262 |    47 ##
+     4262 to      4794 |    30 #
+     4794 to      5326 |     6 
+Reading it: Both histograms pile up in the leftmost, lowest-value bins and thin out to the right:
+  most customers are low to mid value, and a thin tail of big spenders stretches the axis, which is
+  the signature of a right skew.
+
+
+--- Categorical variables: frequency and share ---
+
+gender (per customer) (n = 1000)
+  F                 488    48.8%
+  M                 447    44.7%
+  Other              65     6.5%
+
+country (per customer) (n = 1000)
+  US                485    48.5%
+  CA                162    16.2%
+  UK                150    15.0%
+  AU                112    11.2%
+  DE                 91     9.1%
+
+acquisition_channel (per customer) (n = 1000)
+  Google            404    40.4%
+  Facebook          298    29.8%
+  Organic           206    20.6%
+  Referral           92     9.2%
+
+category (per transaction row) (n = 10503)
+  Fashion          2745    26.1%
+  Beauty           2434    23.2%
+  Electronics      2176    20.7%
+  Home             1958    18.6%
+  Sports           1190    11.3%
+Reading it: Behaviour and value variables (monetary, target) are right skewed, so a few big
+  spenders carry most of the value, while demographics like age are spread evenly; the categorical
+  splits show where volume sits by country, channel, and product category.
+
+
+==============================================================================
+SEGMENTS: who they are and how value concentrates
+==============================================================================
+
+--- Per-segment profile (medians) and share of total value ---
+segment                  n     pct  recency   freq   monetary      aov   age   med_value  val_shr
+VIPs                   148   14.8%       18     24     $2,911     $119    44      $3,804    72.4%
+Bargain Hunters        381   38.1%       26     14       $314      $22    41        $363    17.7%
+Occasional Shoppers    471   47.1%      117      3       $178      $55    42        $160     9.9%
+Reading it: Value is concentrated: VIPs are 14.8% of customers but hold 72.4% of predicted
+  next-year value. Segments differ sharply on behaviour (frequency, recency, spend) yet median age
+  varies only 3 years across them, so these are behavioural tiers, not demographic ones. Target by
+  behaviour, not by age or demographics.
+
+
+==============================================================================
+VALUE DRIVERS: what predicts next-year value
+==============================================================================
+
+--- Correlation with next-year value (sorted by strength) ---
+driver          corr
+monetary       0.999
+aov            0.819
+frequency      0.790
+recency       -0.301
+age            0.029
+Reading it: Every behaviour points the same way, but total spend (monetary) is far and away the
+  strongest single predictor of what a customer is worth next year.
+
+
+--- Multiple regression: target ~ recency + frequency + monetary + aov + age ---
+term                 coef    p_value
+(Intercept)      -75.9185  1.256e-11
+recency            0.0910  4.236e-09
+frequency         -2.7592  4.405e-05
+monetary           1.3840          0
+aov               -1.3193  2.604e-13
+age                1.4738  5.707e-52
+R-squared: 0.9989
+Reading it: Spend dominates. Frequency and average order value can turn NEGATIVE here even though
+  each is positive on its own: because monetary equals frequency times average order value by
+  construction, they are collinear, so their signs flip once spend is in the model. This is a
+  statistical artefact, not a real negative effect. Age matters but is tiny, about $1.4 per year.
+
+
+--- Naive baseline: target ~ monetary alone ---
+R-squared (monetary only): 0.9985
+Reading it: Spend alone already explains almost everything (R-squared about 0.998). Future value is
+  driven by how much a customer has already spent, not by who they are.
+
+
+==============================================================================
+AGE, THE FULL STORY: marginal vs conditional (the flagship test)
+==============================================================================
+
+--- 1) Marginal vs conditional correlations ---
+  cor(age, value)              MARGINAL   =  0.029
+  cor(age, spend)              spend-link =  0.012
+  cor(age, value-per-dollar)   CONDITIONAL=  0.444
+Reading it: The marginal age-to-value link is tiny (0.029) yet the conditional link is large
+  (0.444). The reason: age carries almost no spend information (age-to-spend is 0.012), so age is
+  not redundant with spend and its signal only surfaces once you hold spend fixed, that is, in the
+  value-per-dollar ratio.
+
+
+--- 2) Incremental R-squared of adding age to the spend model ---
+  R2  value ~ spend          = 0.99848
+  R2  value ~ spend + age    = 0.99875
+  incremental R2 from age    = 0.00027
+  age coefficient            = $1.41 per year
+Reading it: Spend already explains 99.8% of value. Adding age lifts that by only 0.00027 of R2
+  (about $1.41 per year of age). Statistically detectable, but practically negligible.
+
+
+--- 3) Value returned per $1 of past spend, by age band ---
+  18-28   $0.93 returned per $1 spent
+  29-38   $1.02 returned per $1 spent
+  39-48   $1.11 returned per $1 spent
+  49-58   $1.16 returned per $1 spent
+  59+     $1.23 returned per $1 spent
+Reading it: The return per dollar rises steadily with age, from about $0.93 for the youngest band
+  to about $1.23 for the oldest. Older customers give back a little more per dollar they have
+  already spent.
+
+
+--- 4) Within-segment age effect (young age<=38 vs old age>=59) ---
+  segment                  corr      young        old      gap
+  VIPs                   -0.026     $3,825     $3,623    $-202
+  Bargain Hunters         0.398       $330       $417      $87
+  Occasional Shoppers     0.334       $144       $197      $53
+Reading it: The age tilt is real inside Bargain Hunters and Occasional Shoppers: older members are
+  worth more, a positive correlation and a positive old-minus-young gap. For VIPs the correlation
+  is essentially zero to negative and the gap flips negative, so among top customers age gives no
+  edge, if anything the younger VIPs are worth more.
+
+
+--- 5) ANOVA of value across age bands ---
+  aov(value ~ age band)  p-value = 0.633
+Reading it: The p-value is 0.633, far above 0.05, so total value does not differ across age bands.
+  Once you look at the raw dollars per customer, age bands are flat.
+
+Reading it: Age is a WEAK second-order retention signal: among equal-spend mid and low value
+  customers, older ones return a little more per dollar, but it adds almost nothing to the value
+  model (+ 0.0003 R2) and it VANISHES for VIPs, and total value is flat across age bands (ANOVA not
+  significant, p= 0.63). So age is NOT a targeting lever, at most a minor within-segment
+  tiebreaker, and never for VIPs.
+
+
+==============================================================================
+CHANNEL ECONOMICS: net value after commission and acquisition cost
+==============================================================================
+
+--- Per-channel net value (sorted by NET) ---
+Channel        n       Revenue    Commission     AcqCost           NET   Net/cust
+Google       404      $286,641        $5,733      $6,060      $274,848       $680
+Facebook     298      $174,348        $1,743      $5,960      $166,645       $559
+Organic      206      $127,397            $0          $0      $127,397       $618
+Referral      92       $51,930        $2,596        $460       $48,873       $531
+
+--- Whole-mix totals ---
+Customers acquired : 1000
+Total revenue      : $640,316
+Whole-mix NET      : $617,763
+Net per customer   : $618
+Return per $ spent : 27.39x
+Reading it: The revenue_share_rate is a commission WE PAY the channel, so higher-rate channels keep
+  less of each revenue dollar. The current mix is strongly net positive, and Google plus Organic
+  carry most of the net value.
+
+
+==============================================================================
+PRODUCT MIX: category price tiers and spend share
+==============================================================================
+
+--- Categories sorted by average price (high to low) ---
+Category       AvgPrice     TotalSpend    Purchases     Share
+Electronics         $90       $196,429         2176     30.7%
+Home                $82       $161,478         1958     25.2%
+Sports              $59        $70,152         1190     11.0%
+Fashion             $41       $113,215         2745     17.7%
+Beauty              $41        $99,042         2434     15.5%
+
+Electronics drives the most total spend at $196,429 (30.7% of all spend).
+Reading it: There are two price tiers: premium (Electronics near $90, Home near $82) and value
+  (Fashion and Beauty near $41, high volume but low price), with Sports in the middle near $59.
+  Electronics leads on both price and total spend (about 31% of the total), so it is the single
+  most important category.
+
+
+==============================================================================
+RETENTION AND CADENCE: how often and how recently they buy
+==============================================================================
+
+--- Median inter-purchase gap and median recency, by segment ---
+Segment                   MedianGap  MedianRecency
+VIPs                          15 d          18 d
+Bargain Hunters               26 d          26 d
+Occasional Shoppers           96 d         117 d
+Reading it: VIPs buy on a tight cycle (median gap about 15 days) and are freshly active (recency
+  about 18 days). Occasional Shoppers have long gaps (about 96 days) and long silence (recency
+  about 117 days), with Bargain Hunters in between. A useful churn-risk rule: once a customer's
+  silence passes roughly twice their segment's normal cadence, fire a win-back trigger, because
+  they are overdue relative to how that segment buys.
+
+
+==============================================================================
+GEOGRAPHY AND DEMOGRAPHICS: volume vs per-head value
+==============================================================================
+
+--- 1) By country: volume vs value per customer ---
+  country         n    total value     value/cust
+  US            485       $393,607           $812
+  CA            162       $134,683           $831
+  UK            150        $95,694           $638
+  AU            112        $98,045           $875
+  DE             91        $60,565           $666
+Reading it: The countries differ hugely in headcount (from 91 to 485 customers) but barely in value
+  per customer: every country sits between $638 and $875 per head. Bigger countries matter through
+  VOLUME of customers, not because those customers are individually richer.
+
+
+--- 2) By gender: volume vs value per customer ---
+  gender            n    total value     value/cust
+  F               488       $355,443           $728
+  M               447       $384,108           $859
+  Other            65        $43,043           $662
+Reading it: Gender is roughly balanced (65 to 488 customers per group) and value per customer moves
+  only between $662 and $859, so gender carries no meaningful value signal either.
+
+Reading it: Geography and gender are VOLUME stories, not value signals: per-customer value barely
+  moves across country ($638 to $875) or gender ($662 to $859). Do NOT target by geography or
+  gender, target by behaviour.
+
+
+==============================================================================
+LAPSED CUSTOMERS: size and shape of the win-back opportunity
+==============================================================================
+
+--- Lapsed pool size and value ---
+Recency threshold (90th pct): 241 days
+Lapsed customers            : 101 of 1000 (10.1%)
+Their share of total value  : 1.6% ($12,549 of $782,594)
+Reading it: The lapsed pool is small, about 10.1% of customers, and holds only 1.6% of predicted
+  next-year value.
+
+
+--- Segment breakdown of lapsed customers ---
+segment                   n      pct
+VIPs                      0     0.0%
+Bargain Hunters           0     0.0%
+Occasional Shoppers     101   100.0%
+Reading it: The lapsed pool sits almost entirely in the Occasional Shoppers segment, and includes
+  essentially no VIPs.
+
+
+--- Category skew: lapsed purchase share vs all customers (index, >1 = over-index) ---
+category        lap_shr    all_shr    index
+Sports            20.5%      11.3%     1.81
+Home              25.5%      18.6%     1.37
+Fashion           27.2%      26.1%     1.04
+Beauty            17.6%      23.2%     0.76
+Electronics        9.2%      20.7%     0.44
+Reading it: Categories that over-index among lapsed buyers (index above 1): Sports, Home, Fashion.
+  Overall the lapsed pool is small, low value, and almost entirely Occasional Shoppers, so win-back
+  is a modest roadmap item, not a headline.
+
+
+==============================================================================
+HYPOTHESIS TESTS: are the patterns statistically real
+==============================================================================
+
+--- 1) ANOVA: target CLV ~ segment ---
+  F = 14389.65   p = <1e-16
+  verdict: segment value differences are REAL (significant)
+Reading it: Segments separate on value with near-zero p: the VIP / Bargain / Occasional split is a
+  real value signal, not noise.
+
+
+--- 2) ANOVA: target CLV ~ age band ---
+  F =     0.64   p = 0.633
+  verdict: NO significant difference by age band (not a lever)
+Reading it: Age bands do not separate on value (p well above 0.05): age is not a targeting lever.
+
+
+--- 3) Chi-square: product category x segment ---
+  X-squared =  2715.78   df = 8   p = <1e-16
+  verdict: segments buy DIFFERENT product mixes (significant)
+Reading it: Category purchase mix differs by segment with near-zero p: segments really do shop
+  differently.
+
+
+--- 4) cor.test: age vs target CLV ---
+  r =  0.029   t =   0.90   df = 998   p = 0.368
+  verdict: age-value correlation is NOT distinguishable from zero
+Reading it: Age barely correlates with value (r near 0.03) and the correlation is not
+  distinguishable from zero.
+
+Reading it: Segments and product mix differ for real, but value does NOT differ by age band,
+  confirming age is not a targeting lever.
+
+
+==============================================================================
+BUDGET OPTIMIZATION: best coupon per segment as an integer linear program
+==============================================================================
+
+--- Optimal coupon plan ---
+  VIPs                 coupon $20   (spend $3,000, net $6,000)
+  Bargain Hunters      coupon $ 5   (spend $1,750, net $2,450)
+  Occasional Shoppers  coupon $10   (spend $5,000, net $6,000)
+  Total net incremental revenue: $14,450  |  spend $9,750 of the $10,000 budget
+Reading it: every $1 of coupon returns about $2.48 of incremental revenue, and $250 of the budget
+  is left unspent. The budget binds: giving every segment its own best coupon would cost $11,500
+  and earn $14,800, so we trim the segment whose extra coupon dollars add least, giving up only
+  $350 of net.
+
+
+==============================================================================
+KEY TAKEAWAYS: one-look summary of everything above
+==============================================================================
+  1. Value is concentrated: 148 VIPs (14.8% of customers) hold 72.4% of next-year value.
+  2. Value is driven by behaviour, not demographics: spend correlates 0.999 with value and alone predicts 99.8% of it;
+     age correlates only 0.029 and is a weak within-segment retention tiebreaker that does not apply to VIPs.
+  3. The acquisition mix is net positive overall: about $617,763 after commission and signup cost.
+  4. Best coupon plan: VIPs $20, Bargain Hunters $5, Occasional Shoppers $10, returning $14,450 net for $9,750 spent.

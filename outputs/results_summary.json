@@ -1,0 +1,17 @@
+{
+  "segment_sizes": {
+    "vip": 148,
+    "bargain": 380,
+    "occasional": 472
+  },
+  "clv_test_error": {
+    "rmse": 23.94,
+    "mae": 14.9
+  },
+  "coupon_per_customer": {
+    "vip": 20,
+    "bargain": 5,
+    "occasional": 10
+  },
+  "expected_net_revenue": 14450
+}

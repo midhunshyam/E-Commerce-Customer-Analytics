@@ -1,0 +1,14 @@
+{
+  "budget": 15000,
+  "populations": {
+    "VIPs": 200,
+    "Bargain Hunters": 400,
+    "Occasional Shoppers": 600
+  },
+  "coupons": [0, 5, 10, 20],
+  "lift": {
+    "VIPs":                {"0": 0, "5": 15, "10": 35, "20": 60},
+    "Bargain Hunters":     {"0": 0, "5": 12, "10": 18, "20": 22},
+    "Occasional Shoppers": {"0": 0, "5": 8,  "10": 22, "20": 30}
+  }
+}
